@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../src/utils/tools/oasis_tools.h
+
+/home/liangyuan/Desktop/svn/repository/edgeComputing/sdk/src/utils/log/oasis_log.c
+stdio.h
+-
+stdlib.h
+-
+stdarg.h
+-
+time.h
+-
+sys/timeb.h
+-
+string.h
+-
+sys/time.h
+-
+oasis_log.h
+/home/liangyuan/Desktop/svn/repository/edgeComputing/sdk/src/utils/log/oasis_log.h
+oasis_tools.h
+/home/liangyuan/Desktop/svn/repository/edgeComputing/sdk/src/utils/log/oasis_tools.h
+
+/home/liangyuan/Desktop/svn/repository/edgeComputing/sdk/src/utils/log/oasis_log.h
+

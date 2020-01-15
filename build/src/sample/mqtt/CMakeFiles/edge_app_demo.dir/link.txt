@@ -1,0 +1,1 @@
+/usr/bin/cc     CMakeFiles/edge_app_demo.dir/edgeClient.c.o  -o ../../../bin/edge_app_demo ../../../lib/libedge_app_sdk.a -lpthread 

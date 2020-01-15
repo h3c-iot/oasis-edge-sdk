@@ -1,0 +1,9 @@
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/src/shadow/)
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/src/utils/json)
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/src/utils/log)
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/src/utils/tools)
+INCLUDE_DIRECTORIES (${PROJECT_SOURCE_DIR}/src/protocal/mqtt/external)
+
+ADD_LIBRARY (edge_shadow OBJECT
+        ${PROJECT_SOURCE_DIR}/src/shadow/oasis_shadow.c
+)
