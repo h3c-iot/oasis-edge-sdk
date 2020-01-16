@@ -16,24 +16,24 @@ extern "C"
 #define DEV_DISABLED  "disabled"
 #define DEV_NOTFOUND  "notfound"
 
-#define TAG_REQ  1
-#define TAG_RSP  0
+#define FLAG_REQ  1
+#define FLAG_RSP  0
 
-#define TOPIC_REQ_ONLINE         "app/set/request/oasis/online"
-#define TOPIC_REQ_OFFLINE        "app/set/request/oasis/offline"
-#define TOPIC_REQ_SET_SHADOW     "app/set/request/oasis/updateShadow"
-#define TOPIC_REQ_KEEPALIVE       "app/set/request/oasis/keepalive"
+#define TOPIC_REQ_ONLINE         "app/request/oasis/online"
+#define TOPIC_REQ_OFFLINE        "app/request/oasis/offline"
+#define TOPIC_REQ_SET_SHADOW     "app/request/oasis/updateShadow"
+#define TOPIC_REQ_KEEPALIVE      "app/request/oasis/keepalive"
 
 #define TOPIC_SUB_CNT 5
-#define TOPIC_RSP_ONLINE            "oasis/set/response/app/online"
+#define TOPIC_RSP_ONLINE            "oasis/response/app/online"
 #define TOPIC_RSP_ONLINE_QOS        MQTT_QOS0
-#define TOPIC_RSP_OFFLINE           "oasis/set/response/app/offline"
+#define TOPIC_RSP_OFFLINE           "oasis/response/app/offline"
 #define TOPIC_RSP_OFFLINE_QOS       MQTT_QOS0
-#define TOPIC_RSP_SET_SHADOW        "oasis/set/response/app/updateShadow"
+#define TOPIC_RSP_SET_SHADOW        "oasis/response/app/updateShadow"
 #define TOPIC_RSP_SET_SHADOW_QOS    MQTT_QOS0
-#define TOPIC_RSP_KEEPALIVE          "oasis/set/response/app/keepalive"
-#define TOPIC_RSP_KEEPALIVE_QOS      MQTT_QOS0
-#define TOPIC_UPDATE_SHADOW         "oasis/notify/event/app/updateShadow"
+#define TOPIC_RSP_KEEPALIVE         "oasis/response/app/keepalive"
+#define TOPIC_RSP_KEEPALIVE_QOS     MQTT_QOS0
+#define TOPIC_UPDATE_SHADOW         "oasis/notify/app/updateShadow"
 #define TOPIC_UPDATE_SHADOW_QOS     MQTT_QOS0
 
 #define LENGTH_PRODUCTKEY 20
@@ -62,7 +62,7 @@ typedef struct tagDEV_SHADOW_TAG
     int offline;
     int keepalive;
     int setShadow;
-} DEV_SHADOW_TAG_S;
+} DEV_SHADOW_FLAG_S;
 
 typedef struct tagDEV_SHADOW
 {
@@ -72,17 +72,17 @@ typedef struct tagDEV_SHADOW
     char token[LENGTH_TOKEN];
     char status[LENGTH_STATUS];
     long version;
-    DEV_SHADOW_TAG_S *tag;
+    DEV_SHADOW_FLAG_S *flag;
     DEV_SHADOW_STATE_S *state;
 } DEV_SHADOW_S;
 
 DEV_SHADOW_S* SHADOW_Init();
-void SHADOW_Release(DEV_SHADOW_S* shadow);
-int SHADOW_Connect_Req(void *context, char *topic, char *productKey, char *deviceID, int *flag);
-int SHADOW_Connect_Rsp(char *payload, char *productKey, char *deviceID, DEV_SHADOW_S *devShadow, int *flag);
-int SHADOW_Set_Req(void *context, DEV_SHADOW_S *devShadow, int *flag);
-int SHADOW_Set_Rsp(char *payload, char *productKey, char *deviceID, DEV_SHADOW_S *devShadow, int *flag);
-int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow);
+void SHADOW_Destroy(DEV_SHADOW_S* shadow);
+int SHADOW_Connect_Req(void *context, char *topic, DEV_SHADOW_S *shadow);
+int SHADOW_Connect_Rsp(char *payload, char *topic, DEV_SHADOW_S *shadow);
+int SHADOW_Set_Req(void *context, DEV_SHADOW_S *shadow);
+int SHADOW_Set_Rsp(char *payload, DEV_SHADOW_S *shadow);
+int SHADOW_Update(char *payload, DEV_SHADOW_S *shadow);
 
 #ifdef __cplusplus
 }

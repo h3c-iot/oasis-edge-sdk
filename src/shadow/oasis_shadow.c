@@ -19,7 +19,16 @@ extern "C"
 #include "oasis_tools.h"
 #include "oasis_shadow.h"
 
-int SHADOW_Connect_Req(void *context, char *topic, char *productKey, char *deviceID, int *tag)
+/*
+* @brief Request changing the device connection status.
+* This function send mqtt request message for changing the device connection status.
+*
+* @param [in] context: a pointer to the relevant mqtt client.
+* @param [in] topic: a mqtt topic.
+* @param [in] shadow: a pointer to the device shadow.
+* @return SUCCESS if success, otherwise return ERROR.
+*/
+int SHADOW_Connect_Req(void *context, char *topic, DEV_SHADOW_S *shadow)
 {
     int ret;
     char *out;
@@ -41,8 +50,8 @@ int SHADOW_Connect_Req(void *context, char *topic, char *productKey, char *devic
     cJSON_AddItemToObject(root, "deviceInfo", deviceInfo = cJSON_CreateArray());
     cJSON_AddItemToArray(deviceInfo, deviceList = cJSON_CreateObject());
 
-    cJSON_AddStringToObject(deviceList, "productKey", productKey);
-    cJSON_AddStringToObject(deviceList, "deviceID", deviceID);
+    cJSON_AddStringToObject(deviceList, "productKey", shadow->productKey);
+    cJSON_AddStringToObject(deviceList, "deviceID", shadow->deviceID);
 
     out = cJSON_PrintUnformatted(root);
 
@@ -62,7 +71,18 @@ int SHADOW_Connect_Req(void *context, char *topic, char *productKey, char *devic
         return ERROR;
     }
 
-    *tag = TAG_REQ;
+    if(0 == strcmp(topic, TOPIC_REQ_ONLINE))
+    {
+        shadow->flag->online = FLAG_REQ;
+    }
+    else if(0 == strcmp(topic, TOPIC_REQ_OFFLINE))
+    {
+        shadow->flag->offline = FLAG_REQ;
+    }
+    else if(0 == strcmp(topic, TOPIC_REQ_KEEPALIVE))
+    {
+        shadow->flag->keepalive = FLAG_REQ;
+    }
 
     LOG_DEBUG("publish topic: %s, payload:%s", topic, out);
 
@@ -70,7 +90,16 @@ int SHADOW_Connect_Req(void *context, char *topic, char *productKey, char *devic
     return SUCCESS;
 }
 
-int SHADOW_Connect_Rsp(char *payload, char *productKey, char *deviceID, DEV_SHADOW_S *devShadow, int *tag)
+/*
+* @brief Process the result of changing the device connection status.
+* This function processes the mqtt response message according to the topic.
+*
+* @param [in] payload: the payload of mqtt message.
+* @param [in] topic: a mqtt topic.
+* @param [in] shadow: a pointer to the device shadow.
+* @return SUCCESS if success, otherwise return ERROR.
+*/
+int SHADOW_Connect_Rsp(char *payload, char *topic, DEV_SHADOW_S *shadow)
 {
     cJSON *root, *devinfo, *devinfo_list, *devinfo_item;
     cJSON *rsp_productKey, *rsp_deviceID, *state;
@@ -136,21 +165,40 @@ int SHADOW_Connect_Rsp(char *payload, char *productKey, char *deviceID, DEV_SHAD
             return ERROR;
         }
 
-        if (0 == strcmp(productKey, rsp_productKey->valuestring) && 
-            0 == strcmp(deviceID, rsp_deviceID->valuestring) && 
+        if (0 == strcmp(shadow->productKey, rsp_productKey->valuestring) && 
+            0 == strcmp(shadow->deviceID, rsp_deviceID->valuestring) && 
             NULL != state->valuestring)
         {
-            snprintf(devShadow->status, LENGTH_STATUS, "%s", state->valuestring);
-        }        
+            snprintf(shadow->status, LENGTH_STATUS, "%s", state->valuestring);
+        }
     }
     cJSON_Delete(root);
 
-    *tag = TAG_RSP;
+    if(0 == strcmp(topic, TOPIC_RSP_ONLINE))
+    {
+        shadow->flag->online = FLAG_RSP;
+    }
+    else if(0 == strcmp(topic, TOPIC_RSP_OFFLINE))
+    {
+        shadow->flag->offline = FLAG_RSP;
+    }
+    else if(0 == strcmp(topic, TOPIC_RSP_KEEPALIVE))
+    {
+        shadow->flag->keepalive = FLAG_RSP;
+    }
 
     return SUCCESS;
 }
 
-int SHADOW_Set_Req(void *context, DEV_SHADOW_S *devShadow, int *tag)
+/*
+* @brief Request setting the device shadow.
+* This function sends a mqtt request message of setting the device shadow.
+*
+* @param [in] context: a pointer to the relevant mqtt client.
+* @param [in] shadow: a pointer to the device shadow.
+* @return SUCCESS if success, otherwise return ERROR.
+*/
+int SHADOW_Set_Req(void *context, DEV_SHADOW_S *shadow)
 {
     MQTTAsync c = (MQTTAsync)context;
     MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
@@ -169,19 +217,19 @@ int SHADOW_Set_Req(void *context, DEV_SHADOW_S *devShadow, int *tag)
     ret = TOOLS_Get_UUID(uuid);
 
     root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "productKey", devShadow->productKey);
-    cJSON_AddStringToObject(root, "deviceID", devShadow->deviceID);
-    cJSON_AddNumberToObject(root, "version", devShadow->version);
+    cJSON_AddStringToObject(root, "productKey", shadow->productKey);
+    cJSON_AddStringToObject(root, "deviceID", shadow->deviceID);
+    cJSON_AddNumberToObject(root, "version", shadow->version);
     cJSON_AddStringToObject(root, "timestamp", timestamp);
     cJSON_AddStringToObject(root, "token", uuid);
 
     cJSON_AddItemToObject(root, "state", state = cJSON_CreateObject());
     cJSON_AddItemToObject(state, "reported", stateReported = cJSON_CreateObject()); 
-    cJSON_AddStringToObject(stateReported, "switch", devShadow->state->reported->sw);
+    cJSON_AddStringToObject(stateReported, "switch", shadow->state->reported->sw);
     cJSON_AddItemToObject(root, "metadata", metadata = cJSON_CreateObject());
     cJSON_AddItemToObject(metadata, "reported", metadataReported = cJSON_CreateObject());
     cJSON_AddItemToObject(metadataReported, "switch", metadataReportedSwitch = cJSON_CreateObject());
-    cJSON_AddStringToObject(metadataReportedSwitch, "timestamp", devShadow->state->reported->swTimestamp);
+    cJSON_AddStringToObject(metadataReportedSwitch, "timestamp", shadow->state->reported->swTimestamp);
 
     out = cJSON_PrintUnformatted(root);
 
@@ -201,7 +249,7 @@ int SHADOW_Set_Req(void *context, DEV_SHADOW_S *devShadow, int *tag)
         return ERROR;
     }
 
-    *tag = TAG_REQ;
+    shadow->flag->setShadow = FLAG_REQ;
 
     LOG_DEBUG("publish topic:%s payload:%s", TOPIC_REQ_SET_SHADOW, out);
 
@@ -209,7 +257,15 @@ int SHADOW_Set_Req(void *context, DEV_SHADOW_S *devShadow, int *tag)
     return SUCCESS;
 }
 
-int SHADOW_Set_Rsp(char *payload, char *productKey, char *deviceID, DEV_SHADOW_S *devShadow, int *tag)
+/*
+* @brief Process the result of setting the device shadow.
+* This function processes the mqtt response message of setting the device shadow.
+*
+* @param [in] payload: the payload of mqtt message.
+* @param [in] shadow: a pointer to the device shadow.
+* @return SUCCESS if success, otherwise return ERROR.
+*/
+int SHADOW_Set_Rsp(char *payload, DEV_SHADOW_S *shadow)
 {
     cJSON *root;
     cJSON *rsp_productKey, *rsp_deviceID, *statusCode, *statusStr, *version;
@@ -257,19 +313,19 @@ int SHADOW_Set_Rsp(char *payload, char *productKey, char *deviceID, DEV_SHADOW_S
         return ERROR;
     }
 
-    if (0 == strcmp(productKey, rsp_productKey->valuestring) && 
-        0 == strcmp(deviceID, rsp_deviceID->valuestring))
+    if (0 == strcmp(shadow->productKey, rsp_productKey->valuestring) && 
+        0 == strcmp(shadow->deviceID, rsp_deviceID->valuestring))
     {
         if(200 == statusCode->valueint)
         {
-            if(version->valueint == devShadow->version)
+            if(version->valueint == shadow->version)
             {
-                *tag = TAG_RSP;
+                shadow->flag->setShadow = FLAG_RSP;
             }
             else
             {
                 LOG_WARNNING("Shadow version is not match.");
-            }                      
+            }
         }
         else
         {
@@ -282,7 +338,15 @@ int SHADOW_Set_Rsp(char *payload, char *productKey, char *deviceID, DEV_SHADOW_S
     return SUCCESS;
 }
 
-int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow)
+/*
+* @brief Request changing the device connection status.
+* This function send mqtt request message for changing the device connection status.
+*
+* @param [in] payload: the payload of mqtt message.
+* @param [in] shadow: a pointer to the device shadow.
+* @return SUCCESS if success, otherwise return ERROR.
+*/
+int SHADOW_Update(char *payload, DEV_SHADOW_S *shadow)
 {
     cJSON *root = NULL;
     cJSON *productKey = NULL, *deviceID = NULL, *state = NULL, *metadata = NULL, *timestamp = NULL, *version = NULL;
@@ -307,7 +371,7 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow)
         return ERROR;
     }
 
-    if(0 > strcmp(timestamp->valuestring, devShadow->timestamp))
+    if(0 > strcmp(timestamp->valuestring, shadow->timestamp))
     {
         LOG_WARNNING("Failed to set shadow, the message is too late.");
         return ERROR;
@@ -318,7 +382,7 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow)
         LOG_WARNNING("Failed to parse json payload, can't get productKey.");
         return ERROR;
     }
-    else if(version->valueint < devShadow->version)
+    else if(version->valueint < shadow->version)
     {
         LOG_WARNNING("Failed to set shadow, the version is too small.");
         return ERROR;
@@ -329,7 +393,7 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow)
         LOG_WARNNING("Failed to parse json payload, can't get productKey.");
         return ERROR;
     }
-    if(0 != strcmp(productKey->valuestring, devShadow->productKey))
+    if(0 != strcmp(productKey->valuestring, shadow->productKey))
     {
         LOG_DEBUG("The productKey does not match.");
         return SUCCESS;
@@ -340,7 +404,7 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow)
         LOG_WARNNING("Failed to parse json payload, can't get deviceID.");
         return ERROR;
     }
-    if(0 != strcmp(deviceID->valuestring, devShadow->deviceID))
+    if(0 != strcmp(deviceID->valuestring, shadow->deviceID))
     {
         LOG_DEBUG("The deviceID does not match.");
         return SUCCESS;
@@ -354,13 +418,13 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow)
     stateDesired = cJSON_GetObjectItem(state, "desired");
     if(!stateDesired)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get stateDesired.");
+        LOG_WARNNING("Failed to parse json payload, can't get state-desired.");
         return ERROR;
     }
     stateDesiredSwitch = cJSON_GetObjectItem(stateDesired, "switch");
     if(!stateDesiredSwitch)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get stateDesiredSwitch.");
+        LOG_WARNNING("Failed to parse json payload, can't get state-desired-switch.");
         return ERROR;
     }
 
@@ -373,31 +437,38 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *devShadow)
     metadataDesired = cJSON_GetObjectItem(metadata, "desired");
     if(!metadataDesired)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get metadataDesired.");
+        LOG_WARNNING("Failed to parse json payload, can't get metadata-desired.");
         return ERROR;
     }
     metadataDesiredSwitch = cJSON_GetObjectItem(metadataDesired, "switch");
     if(!metadataDesiredSwitch)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get metadataDesiredSwitch.");
+        LOG_WARNNING("Failed to parse json payload, can't get metadata-desired-switch.");
         return ERROR;
     }
     metadataDesiredSwitchTimestamp = cJSON_GetObjectItem(metadataDesiredSwitch, "timestamp");
     if(!metadataDesiredSwitchTimestamp)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get metadataDesiredSwitchTimestamp.");
+        LOG_WARNNING("Failed to parse json payload, can't get metadata-desired-switch-timestamp.");
         return ERROR;
     }
 
-    snprintf(devShadow->state->desired->sw, LENGTH_SWITCH, "%s", stateDesiredSwitch->valuestring);
-    snprintf(devShadow->state->desired->swTimestamp, LENGTH_TIMESTAMP, "%s", metadataDesiredSwitchTimestamp->valuestring);
-    devShadow->version = version->valueint;
+    snprintf(shadow->state->desired->sw, LENGTH_SWITCH, "%s", stateDesiredSwitch->valuestring);
+    snprintf(shadow->state->desired->swTimestamp, LENGTH_TIMESTAMP, "%s", metadataDesiredSwitchTimestamp->valuestring);
+    shadow->version = version->valueint;
 
     cJSON_Delete(root);
     
     return SUCCESS;
 }
 
+/*
+* @brief Initialize the device shadow attribute.
+* This function initializes the device shadow attribute structures.
+*
+* @param [in] shadow: The point of the device shadow structure.
+* @return SUCCESS if success, otherwise return ERROR.
+*/
 int Shadow_Attribute_Init(DEV_SHADOW_STATE_S* state)
 {
     state->reported = (DEV_SHADOW_ATTRIBUTE_S*)malloc(sizeof(DEV_SHADOW_ATTRIBUTE_S));
@@ -427,7 +498,13 @@ int Shadow_Attribute_Init(DEV_SHADOW_STATE_S* state)
     return SUCCESS;
 }
 
-void SHADOW_Release(DEV_SHADOW_S* shadow)
+/*
+* @brief Deconstruct the device shadow.
+* This function deconstructs the device shadow data structures.
+*
+* @param [in] shadow: a pointer to the device shadow.
+*/
+void SHADOW_Destroy(DEV_SHADOW_S* shadow)
 {
     if(NULL != shadow->state->reported)
     {
@@ -453,10 +530,10 @@ void SHADOW_Release(DEV_SHADOW_S* shadow)
         shadow->state = NULL;
     }
 
-    if(NULL != shadow->tag)
+    if(NULL != shadow->flag)
     {
-        free(shadow->tag);
-        shadow->tag = NULL;
+        free(shadow->flag);
+        shadow->flag = NULL;
     }
 
     if(NULL != shadow)
@@ -468,6 +545,13 @@ void SHADOW_Release(DEV_SHADOW_S* shadow)
     return;
 }
 
+/*
+* @brief Initialize the device shadow.
+* This function initializes the device shadow data structures.
+*
+* @return NULL: Construct shadow failed.
+* @return NOT_NULL: Construct success.
+*/
 DEV_SHADOW_S* SHADOW_Init()
 {
     DEV_SHADOW_S* shadow;
@@ -487,13 +571,13 @@ DEV_SHADOW_S* SHADOW_Init()
     }
     memset(shadow->state, 0, sizeof(DEV_SHADOW_STATE_S));
 
-    shadow->tag = (DEV_SHADOW_TAG_S*)malloc(sizeof(DEV_SHADOW_TAG_S));
-    if(NULL == shadow->tag)
+    shadow->flag = (DEV_SHADOW_FLAG_S*)malloc(sizeof(DEV_SHADOW_FLAG_S));
+    if(NULL == shadow->flag)
     {
         LOG_ERROR("Shadow flag malloc failed.");
         return NULL;
     }
-    memset(shadow->tag, 0, sizeof(DEV_SHADOW_TAG_S));
+    memset(shadow->flag, 0, sizeof(DEV_SHADOW_FLAG_S));
 
     if (SUCCESS != Shadow_Attribute_Init(shadow->state))
     {

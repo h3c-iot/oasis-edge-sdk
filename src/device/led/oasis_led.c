@@ -35,8 +35,6 @@ int Led_Get_State(uint8_t *state)
     int ret = SUCCESS;
     uint8_t value = 0;
     
-    // LOG_DEBUG("Starting to get led state.");
-
     ret = SPI_Read(LED_REG, &value);
     if (SUCCESS != ret)
     {
@@ -63,8 +61,6 @@ int Led_Update_State(uint8_t state)
     uint8_t value = 0;
     uint8_t setValue = 0;
     int ret = SUCCESS;
-
-    //LOG_DEBUG("Starting to update led state.");
 
     switch (state)
     {
@@ -116,32 +112,32 @@ void Led_Trans_State(char *status, uint8_t *state)
 
 int LED_Online_Req(void *context)
 {    
-    return SHADOW_Connect_Req(context, TOPIC_REQ_ONLINE, PRODUCTKEY, DEVICEID, &(ledShadow->tag->online));
+    return SHADOW_Connect_Req(context, TOPIC_REQ_ONLINE, ledShadow);
 }
 
 int LED_Online_Rsp(char *payload)
 {
-    return SHADOW_Connect_Rsp(payload, PRODUCTKEY, DEVICEID, ledShadow, &(ledShadow->tag->online));
+    return SHADOW_Connect_Rsp(payload, TOPIC_RSP_ONLINE, ledShadow);
 }
 
 int LED_Offline_Req(void *context)
 {
-    return SHADOW_Connect_Req(context, TOPIC_REQ_OFFLINE, PRODUCTKEY, DEVICEID, &(ledShadow->tag->offline));
+    return SHADOW_Connect_Req(context, TOPIC_REQ_OFFLINE, ledShadow);
 }
 
 int LED_Offline_Rsp(char *payload)
 {
-    return SHADOW_Connect_Rsp(payload, PRODUCTKEY, DEVICEID, ledShadow, &(ledShadow->tag->offline));
+    return SHADOW_Connect_Rsp(payload, TOPIC_RSP_OFFLINE, ledShadow);
 }
 
 int Led_Set_Shadow_Req(void *context, DEV_SHADOW_S *ledShadow)
 {
-    return SHADOW_Set_Req(context, ledShadow, &(ledShadow->tag->setShadow));
+    return SHADOW_Set_Req(context, ledShadow);
 }
 
 int LED_Set_Shadow_Rsp(char *payload)
 {
-    return SHADOW_Set_Rsp(payload, PRODUCTKEY, DEVICEID, ledShadow, &(ledShadow->tag->setShadow));
+    return SHADOW_Set_Rsp(payload, ledShadow);
 }
 
 int LED_Update_Shadow(char *payload)
@@ -163,12 +159,12 @@ int LED_Update_Shadow(char *payload)
 
 int LED_Keepalive_Req(void *context)
 {
-    return SHADOW_Connect_Req(context, TOPIC_REQ_KEEPALIVE, PRODUCTKEY, DEVICEID, &(ledShadow->tag->keepalive));
+    return SHADOW_Connect_Req(context, TOPIC_REQ_KEEPALIVE, ledShadow);
 }
 
 int LED_Keepalive_Rsp(char *payload)
 {
-    return SHADOW_Connect_Rsp(payload, PRODUCTKEY, DEVICEID, ledShadow, &(ledShadow->tag->keepalive));
+    return SHADOW_Connect_Rsp(payload, TOPIC_RSP_KEEPALIVE, ledShadow);
 }
 
 int LED_Keepalive_Status(MQTTAsync handle)
@@ -177,9 +173,9 @@ int LED_Keepalive_Status(MQTTAsync handle)
     while(1)
     {
         sleep(20);
-        if (0 == strcmp(DEV_ONLINE, ledShadow->status) && TAG_RSP == ledShadow->tag->keepalive)
+        if (0 == strcmp(DEV_ONLINE, ledShadow->status) && FLAG_RSP == ledShadow->flag->keepalive)
         {
-            if (TAG_RSP != ledShadow->tag->setShadow)
+            if (FLAG_RSP != ledShadow->flag->setShadow)
             {
                 ret = Led_Set_Shadow_Req(handle, ledShadow);
             }
@@ -187,7 +183,7 @@ int LED_Keepalive_Status(MQTTAsync handle)
         }
         else
         {
-            ledShadow->tag->keepalive = TAG_RSP;
+            ledShadow->flag->keepalive = FLAG_RSP;
             snprintf(ledShadow->status, LENGTH_STATUS, "%s", "offline");
             ret = LED_Online_Req(handle);
         }
@@ -216,7 +212,7 @@ int LED_Monitor_State(MQTTAsync handle)
 
         if (0 == strcmp(DEV_ONLINE, ledShadow->status) &&
             0 == strcmp(state, ledShadow->state->reported->sw) &&
-            TAG_RSP == ledShadow->tag->keepalive)
+            FLAG_RSP == ledShadow->flag->keepalive)
         {
             ret = TOOLS_Get_Time_ISO8601(timestamp);
             ret = TOOLS_Get_UUID(uuid);
@@ -248,7 +244,7 @@ int LED_Send_Data(MQTTAsync handle)
     MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
     int ret;
     char *out;
-    char *topic = "app/set/request/oasis/callFunction";
+    char *topic = "app/request/oasis/callFunction";
     int p[2] = {1,2};
     char uuid[LOG_LENGTH_UUID] = {0};
     char timestamp[30] = {0};
@@ -272,7 +268,7 @@ int LED_Send_Data(MQTTAsync handle)
     while(1)
     {
         sleep(20);
-        if (0 == strcmp(DEV_ONLINE, ledShadow->status) && TAG_RSP == ledShadow->tag->keepalive)
+        if (0 == strcmp(DEV_ONLINE, ledShadow->status) && FLAG_RSP == ledShadow->flag->keepalive)
         {
             pubmsg.payload = out;
             pubmsg.payloadlen = strlen(out);
@@ -302,10 +298,10 @@ int Led_Init()
     char uuid[LOG_LENGTH_UUID] = {0};
 
     ledShadow->version = 0;
-    ledShadow->tag->online = TAG_RSP;
-    ledShadow->tag->offline = TAG_RSP;
-    ledShadow->tag->keepalive = TAG_RSP;
-    ledShadow->tag->setShadow = TAG_RSP;
+    ledShadow->flag->online = FLAG_RSP;
+    ledShadow->flag->offline = FLAG_RSP;
+    ledShadow->flag->keepalive = FLAG_RSP;
+    ledShadow->flag->setShadow = FLAG_RSP;
     ret = TOOLS_Get_UUID(uuid); 
     ret = TOOLS_Get_Time_ISO8601(timestamp);
     // ret = Led_Get_State(&ledState);
@@ -349,7 +345,7 @@ int LED_Install()
 
 void LED_Uninstall()
 {
-    SHADOW_Release(ledShadow);
+    SHADOW_Destroy(ledShadow);
 
     LOG_DEBUG("Led has been uninstalled.");
 
