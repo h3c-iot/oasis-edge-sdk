@@ -130,7 +130,7 @@ int LED_Offline_Rsp(char *payload)
     return SHADOW_Connect_Rsp(payload, TOPIC_RSP_OFFLINE, ledShadow);
 }
 
-int Led_Set_Shadow_Req(void *context, DEV_SHADOW_S *ledShadow)
+int LED_Set_Shadow_Req(void *context, DEV_SHADOW_S *ledShadow)
 {
     return SHADOW_Set_Req(context, ledShadow);
 }
@@ -177,7 +177,7 @@ int LED_Keepalive_Status(MQTTAsync handle)
         {
             if (FLAG_RSP != ledShadow->flag->setShadow)
             {
-                ret = Led_Set_Shadow_Req(handle, ledShadow);
+                ret = LED_Set_Shadow_Req(handle, ledShadow);
             }
             ret = LED_Keepalive_Req(handle);
         }
@@ -232,7 +232,7 @@ int LED_Monitor_State(MQTTAsync handle)
                 memset(ledShadow->state->delta->swTimestamp, 0, LENGTH_TIMESTAMP * sizeof(char));
             }
            
-            ret = Led_Set_Shadow_Req(handle, ledShadow);
+            ret = LED_Set_Shadow_Req(handle, ledShadow);
         }
     }
     return ret;
