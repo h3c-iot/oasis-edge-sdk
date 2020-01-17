@@ -294,7 +294,7 @@ int SHADOW_Set_Rsp(char *payload, DEV_SHADOW_S *shadow)
     statusCode = cJSON_GetObjectItem(root, "statusCode");
     if(!statusCode)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get productKey.");
+        LOG_WARNNING("Failed to parse json payload, can't get statusCode.");
         cJSON_Delete(root);
         return ERROR;
     }
@@ -367,7 +367,7 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *shadow)
     timestamp = cJSON_GetObjectItem(root, "timestamp");
     if(!timestamp)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get productKey.");
+        LOG_WARNNING("Failed to parse json payload, can't get timestamp.");
         return ERROR;
     }
 
@@ -379,7 +379,7 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *shadow)
     version = cJSON_GetObjectItem(root, "version");
     if(!version)
     {
-        LOG_WARNNING("Failed to parse json payload, can't get productKey.");
+        LOG_WARNNING("Failed to parse json payload, can't get version.");
         return ERROR;
     }
     else if(version->valueint < shadow->version)

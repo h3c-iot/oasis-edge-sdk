@@ -9,7 +9,7 @@ SET (LIBRARY_OUTPUT_PATH ${PROJECT_BINARY_DIR}/lib)
 SET (CMAKE_BUILE_TYPE DEBUG)
 SET (CMAKE_C_FLAGS_DEBUG "-g -Wall")
 
-#ADD_SUBDIRECTORY (${PROJECT_SOURCE_DIR}/src/app)
+ADD_SUBDIRECTORY (${PROJECT_SOURCE_DIR}/src/app)
 ADD_SUBDIRECTORY (${PROJECT_SOURCE_DIR}/src/device)
 #ADD_SUBDIRECTORY (${PROJECT_SOURCE_DIR}/src/hal)
 #ADD_SUBDIRECTORY (${PROJECT_SOURCE_DIR}/src/ota)
@@ -26,6 +26,7 @@ ADD_LIBRARY (edge_app_sdk STATIC
                 $<TARGET_OBJECTS:edge_mqtt>
                 $<TARGET_OBJECTS:edge_device>
                 $<TARGET_OBJECTS:edge_shadow>
+                $<TARGET_OBJECTS:edge_func>
                 $<TARGET_OBJECTS:utils_log>
                 $<TARGET_OBJECTS:utils_json>
                 $<TARGET_OBJECTS:utils_tools>

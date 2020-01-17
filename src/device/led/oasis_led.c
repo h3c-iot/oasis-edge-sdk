@@ -13,22 +13,20 @@ extern "C"
 #include <stdint.h>
 #include <string.h>
 #include <fcntl.h>
+#include <time.h>
 #include <sys/ioctl.h>
 
 #include "MQTTAsync.h"
 #include "oasis_led.h"
 #include "oasis_spi.h"
 #include "oasis_shadow.h"
+#include "oasis_func.h"
 #include "oasis_log.h"
 #include "oasis_tools.h"
 #include "cJSON.h"
 
-#define LED_OFF   1
-#define LED_ON    0
-#define LED_REG         0x34
-#define LED_STATE_MASK  1
-
 DEV_SHADOW_S *ledShadow = NULL;
+int func_flag = FLAG_REQ;
 
 int Led_Get_State(uint8_t *state)
 {
@@ -238,53 +236,39 @@ int LED_Monitor_State(MQTTAsync handle)
     return ret;
 }
 
-int LED_Send_Data(MQTTAsync handle)
+int LED_Func_Req(MQTTAsync handle)
 {
-    MQTTAsync c = (MQTTAsync)handle;
-    MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
     int ret;
-    char *out;
-    char *topic = "app/request/oasis/callFunction";
-    int p[2] = {1,2};
-    char uuid[LOG_LENGTH_UUID] = {0};
-    char timestamp[30] = {0};
-
-    cJSON *root = NULL;
-    cJSON *param = NULL;
-
-    ret = TOOLS_Get_Time_ISO8601(timestamp);
-    ret = TOOLS_Get_UUID(uuid);
-
-    root = cJSON_CreateObject();
-    cJSON_AddStringToObject(root, "timestamp", timestamp);
-    cJSON_AddStringToObject(root, "token", uuid);
-    cJSON_AddStringToObject(root, "name", "97");
-    cJSON_AddStringToObject(root, "service", "python3");
-
-    cJSON_AddItemToObject(root, "param", param = cJSON_CreateIntArray(p,2));
-
-    out = cJSON_PrintUnformatted(root);
+    int payload[2] = {0, 0};
 
     while(1)
     {
         sleep(20);
         if (0 == strcmp(DEV_ONLINE, ledShadow->status) && FLAG_RSP == ledShadow->flag->keepalive)
         {
-            pubmsg.payload = out;
-            pubmsg.payloadlen = strlen(out);
-            pubmsg.qos = 0;
-            pubmsg.retained = 0;
-
-            ret = MQTTAsync_send(c, topic, pubmsg.payloadlen, pubmsg.payload, pubmsg.qos, pubmsg.retained, NULL);
-            if (ret != MQTTASYNC_SUCCESS)
+            if(FLAG_REQ == func_flag)//未收到函数调用回复，重新调用
             {
-                LOG_WARNNING("Failed to send mqtt message.");
-                MQTTAsync_destroy(&c);
-                return ERROR;
+                srand((unsigned)time(NULL));
+                payload[0] = rand();
+                payload[1] = rand();
+                ret = FUNC_Call_Req(handle, payload);
             }
-
-            LOG_DEBUG("publish topic: %s, payload:%s", topic, out);
+            else
+            {
+                func_flag = FLAG_REQ;//收到函数调用回复，重新模拟调用
+            }            
         }
+    }
+    return ret;
+}
+
+int LED_Func_Rsp(char *payload)
+{
+    int ret = ERROR;
+    ret = FUNC_Call_Rsp(payload);
+    if(SUCCESS == ret)
+    {
+        func_flag = FLAG_RSP;
     }
     return ret;
 }

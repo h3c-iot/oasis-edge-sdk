@@ -20,4 +20,4 @@ int SPI_Write(uint8_t reg, uint8_t value);
 }
 #endif
 
-#endif /* LED_H */
+#endif

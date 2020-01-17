@@ -19,6 +19,7 @@ extern "C"
 #include "oasis_tools.h"
 #include "oasis_log.h"
 #include "oasis_led.h"
+#include "oasis_func.h"
 #include "oasis_shadow.h"
 
 #define WINAPI
@@ -65,6 +66,10 @@ int messageArrived(void *context, char *topicName, int topicLen, MQTTAsync_messa
     {
         ret = LED_Keepalive_Rsp(payloadptr);
     }
+    else if (0 == strcmp(TOPIC_RSP_CALL_FUNCTION, topicName))
+    {
+        ret = LED_Func_Rsp(payloadptr);
+    }
     (void)ret;
 
     MQTTAsync_freeMessage(&message);
@@ -90,16 +95,19 @@ void onConnect(void *context, MQTTAsync_successData *response)
     MQTTAsync client = (MQTTAsync)context;
     MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
     int rc;
-    char *topics[TOPIC_SUB_CNT] = {TOPIC_RSP_ONLINE,
+    // 订阅设备影子与函数计算调用响应
+    char *topics[TOPIC_SUB_CNT + 1] = {TOPIC_RSP_ONLINE,
                                    TOPIC_RSP_OFFLINE,
                                    TOPIC_RSP_SET_SHADOW,
                                    TOPIC_RSP_KEEPALIVE,
-                                   TOPIC_UPDATE_SHADOW};
-    int qoss[TOPIC_SUB_CNT] = {TOPIC_RSP_ONLINE_QOS,
+                                   TOPIC_UPDATE_SHADOW,
+                                   TOPIC_RSP_CALL_FUNCTION};
+    int qoss[TOPIC_SUB_CNT + 1] = {TOPIC_RSP_ONLINE_QOS,
                                TOPIC_RSP_OFFLINE_QOS,
                                TOPIC_RSP_SET_SHADOW_QOS,
                                TOPIC_RSP_KEEPALIVE_QOS,
-                               TOPIC_UPDATE_SHADOW_QOS};
+                               TOPIC_UPDATE_SHADOW_QOS,
+                               TOPIC_RSP_CALL_FUNCTION_QOS};
     opts.onSuccess = onSubscribe;
     opts.onFailure = onSubscribeFailure;
     opts.context = client;
@@ -193,7 +201,7 @@ int main()
 
     led_keepalive_thread_ret = pthread_create(&led_keepalive_thread, NULL, (void *)&LED_Keepalive_Status, (void *)client);
 
-    led_sendData_thread_ret = pthread_create(&led_sendData_thread, NULL, (void *)&LED_Send_Data, (void *)client);
+    led_sendData_thread_ret = pthread_create(&led_sendData_thread, NULL, (void *)&LED_Func_Req, (void *)client);
 
     if (SUCCESS != led_monitor_thread_ret)
     {
