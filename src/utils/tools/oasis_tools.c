@@ -77,11 +77,11 @@ int TOOLS_Get_Time_ISO8601(char *data)
     return ret;
 }
 
-int TOOLS_Get_Time_Unix()
+unsigned long TOOLS_Get_Time_Unix()
 {
     time_t now;
     int unixtime = time(&now);
-    return unixtime;
+    return (unsigned long)unixtime * 1000;
 }
 
 #ifdef __cplusplus

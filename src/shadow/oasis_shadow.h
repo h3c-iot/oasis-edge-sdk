@@ -46,7 +46,7 @@ extern "C"
 typedef struct tagDEV_SHADOW_ATTRIBUTE
 {
     char sw[LENGTH_SWITCH];
-    char swTimestamp[LENGTH_TIMESTAMP];
+    unsigned long swTimestamp;
 } DEV_SHADOW_ATTRIBUTE_S;
 
 typedef struct tagDEV_SHADOW_STATE

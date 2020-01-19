@@ -199,7 +199,7 @@ int LED_Monitor_State(MQTTAsync handle)
 
     while (1)
     {
-        usleep(100000L);
+        sleep(1);
         //ret = Led_Get_State(&ledState);
         state = (ledState == LED_OFF)?"off":"on";
         if (SUCCESS != ret)
@@ -215,19 +215,19 @@ int LED_Monitor_State(MQTTAsync handle)
             ret = TOOLS_Get_Time_ISO8601(timestamp);
             ret = TOOLS_Get_UUID(uuid);
             snprintf(ledShadow->state->reported->sw, LENGTH_SWITCH, "%s", state);
-            snprintf(ledShadow->state->reported->swTimestamp, LENGTH_TIMESTAMP, "%s", timestamp); 
+            ledShadow->state->reported->swTimestamp = TOOLS_Get_Time_Unix();
             snprintf(ledShadow->token, LENGTH_TOKEN, "%s", uuid);
             ledShadow->version++;
             
             if (0 != strcmp(ledShadow->state->reported->sw, ledShadow->state->desired->sw))
             {
                 snprintf(ledShadow->state->delta->sw, LENGTH_SWITCH, "%s", state);
-                snprintf(ledShadow->state->delta->swTimestamp, LENGTH_TIMESTAMP, "%s", timestamp); 
+                ledShadow->state->delta->swTimestamp = TOOLS_Get_Time_Unix();
             }
             else
             {
                 memset(ledShadow->state->delta->sw, 0, LENGTH_SWITCH * sizeof(char));
-                memset(ledShadow->state->delta->swTimestamp, 0, LENGTH_TIMESTAMP * sizeof(char));
+                ledShadow->state->delta->swTimestamp = 0;
             }
            
             ret = LED_Set_Shadow_Req(handle, ledShadow);
@@ -249,8 +249,8 @@ int LED_Func_Req(MQTTAsync handle)
             if(FLAG_REQ == func_flag)//未收到函数调用回复，重新调用
             {
                 srand((unsigned)time(NULL));
-                payload[0] = rand();
-                payload[1] = rand();
+                payload[0] = rand()%128;
+                payload[1] = rand()%128;
                 ret = FUNC_Call_Req(handle, payload);
             }
             else
@@ -299,8 +299,7 @@ int Led_Init()
     snprintf(ledShadow->deviceID, LENGTH_DEVICEID, "%s", DEVICEID);
     snprintf(ledShadow->state->reported->sw, LENGTH_SWITCH, "%s", state);
     snprintf(ledShadow->token, LENGTH_TOKEN, "%s", uuid);
-    snprintf(ledShadow->state->reported->swTimestamp, LENGTH_TIMESTAMP, "%s", timestamp); 
-    
+    ledShadow->state->reported->swTimestamp = TOOLS_Get_Time_Unix();
     return SUCCESS;
 }
 

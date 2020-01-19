@@ -14,8 +14,8 @@ extern "C"
 #define ERROR -1  
 
 int TOOLS_Get_Time_ISO8601(char *data);
-int TOOLS_Get_Time_Unix();
 int TOOLS_Get_UUID(char buf[37]);
+unsigned long TOOLS_Get_Time_Unix();
 
 #endif
 

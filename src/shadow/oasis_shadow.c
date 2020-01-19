@@ -229,7 +229,7 @@ int SHADOW_Set_Req(void *context, DEV_SHADOW_S *shadow)
     cJSON_AddItemToObject(root, "metadata", metadata = cJSON_CreateObject());
     cJSON_AddItemToObject(metadata, "reported", metadataReported = cJSON_CreateObject());
     cJSON_AddItemToObject(metadataReported, "switch", metadataReportedSwitch = cJSON_CreateObject());
-    cJSON_AddStringToObject(metadataReportedSwitch, "timestamp", shadow->state->reported->swTimestamp);
+    cJSON_AddNumberToObject(metadataReportedSwitch, "timestamp", TOOLS_Get_Time_Unix());
 
     out = cJSON_PrintUnformatted(root);
 
@@ -454,8 +454,9 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *shadow)
     }
 
     snprintf(shadow->state->desired->sw, LENGTH_SWITCH, "%s", stateDesiredSwitch->valuestring);
-    snprintf(shadow->state->desired->swTimestamp, LENGTH_TIMESTAMP, "%s", metadataDesiredSwitchTimestamp->valuestring);
+    shadow->state->desired->swTimestamp = metadataDesiredSwitchTimestamp->valuedouble;
     shadow->version = version->valueint;
+    shadow->flag->setShadow = FLAG_REQ;
 
     cJSON_Delete(root);
     
