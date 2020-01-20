@@ -419,13 +419,13 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *shadow)
     if(!stateDesired)
     {
         LOG_WARNNING("Failed to parse json payload, can't get state-desired.");
-        return ERROR;
+        //return ERROR;
     }
     stateDesiredSwitch = cJSON_GetObjectItem(stateDesired, "switch");
     if(!stateDesiredSwitch)
     {
         LOG_WARNNING("Failed to parse json payload, can't get state-desired-switch.");
-        return ERROR;
+        //return ERROR;
     }
 
     metadata = cJSON_GetObjectItem(root, "metadata");
@@ -438,19 +438,19 @@ int SHADOW_Update(char *payload, DEV_SHADOW_S *shadow)
     if(!metadataDesired)
     {
         LOG_WARNNING("Failed to parse json payload, can't get metadata-desired.");
-        return ERROR;
+        //return ERROR;
     }
     metadataDesiredSwitch = cJSON_GetObjectItem(metadataDesired, "switch");
     if(!metadataDesiredSwitch)
     {
         LOG_WARNNING("Failed to parse json payload, can't get metadata-desired-switch.");
-        return ERROR;
+        //return ERROR;
     }
     metadataDesiredSwitchTimestamp = cJSON_GetObjectItem(metadataDesiredSwitch, "timestamp");
     if(!metadataDesiredSwitchTimestamp)
     {
         LOG_WARNNING("Failed to parse json payload, can't get metadata-desired-switch-timestamp.");
-        return ERROR;
+        //return ERROR;
     }
 
     snprintf(shadow->state->desired->sw, LENGTH_SWITCH, "%s", stateDesiredSwitch->valuestring);
